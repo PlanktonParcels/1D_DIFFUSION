@@ -3,6 +3,7 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
+from netCDF4 import Dataset
 from seabird.cnv import fCNV
 
 import settings
@@ -20,6 +21,8 @@ def data_standardization():
     datasets were shared by the corresponding authors of the study. For those seeking to replicate this study, please
     contact these authors.
     """
+
+    standardization_gotm()
 
 
 #   standardization_kukulka()
@@ -77,6 +80,31 @@ def standardization_gotm():
     file_name = utils.get_data_output_name(prefix)
     if not utils.check_file_exist(file_name + ".pkl"):
         print("Read netcdf file from GOTM")
+        data = Dataset(settings.data_dir + "result.nc", "r", format="NETCDF4")
+        output_dic = {
+            "gotm_time": data.variables["time"][
+                :
+            ],  # seconds since 2000-01-01 00:00:00
+            "rho": data.variables["rho"][
+                :, :, 0, 0
+            ],  # density (in-situ) kg/m3
+            "salt": data.variables["salt"][
+                :, :, 0, 0
+            ],  # salinity (absolute) g/kg
+            "temp": data.variables["temp"][
+                :, :, 0, 0
+            ],  # temperature (conservative) Celsius
+            "Zk": data.variables["nuh"][
+                :, :, 0, 0
+            ],  # turbulent diffusivity of heat
+            "depth": data.variables["z"][:, :, 0, 0],  # "depth (center)"
+            "depth_interface": data.variables["zi"][:, :, 0, 0],
+            #           "wind_speed": data[:, -2],
+            "MLD": data.variables["mld_surf"][:, 0, 0],
+        }
+
+        # Pickling the array
+        utils.save_obj(filename=file_name, item=output_dic)
 
 
 def standardization_kooi():
